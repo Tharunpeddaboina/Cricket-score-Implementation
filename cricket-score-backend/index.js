@@ -2,8 +2,11 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require("cors");
+const db = require('./db');
+require('dotenv').config();
 const app = express();
-const port = 8000;
+const port = process.env.PORT || 8000;
+
 
 // Enable CORS for your frontend
 app.use(cors({
@@ -38,6 +41,7 @@ let score = { runs: 0, wickets: 0 };
 let currentOver = [];
 let overs = [];
 
+// Handle Socket.IO connection
 io.on('connection', (socket) => {
   console.log('A client connected:', socket.id);
 
@@ -46,30 +50,40 @@ io.on('connection', (socket) => {
 
   // Listen for updates from Admin
   socket.on('updateScore', (data) => {
-    score = data.score;
-    currentOver = data.currentOver;
-    overs = data.overs;
+    // Validate data
+    if (data && data.score && typeof data.score.runs === 'number' && typeof data.score.wickets === 'number') {
+      score = data.score;
+      currentOver = data.currentOver || [];
+      overs = data.overs || [];
 
-    // Broadcast updates to all connected clients
-    io.emit('scoreUpdate', { score, currentOver, overs });
+      // Broadcast updates to all connected clients
+      io.emit('scoreUpdate', { score, currentOver, overs });
+    } else {
+      console.error('Invalid score data:', data);
+    }
   });
 
   // Handle the runScored event and emit the animation based on the runs scored
   socket.on('runScored', (runs) => {
     console.log('Run scored:', runs);
-    if (runs === 1) {
-      io.emit('animation', 'run1');
-    } else if (runs === 2) {
-      io.emit('animation', 'run2');
-    } else if (runs === 3) {
-      io.emit('animation', 'run3');
-    } else if (runs === 4) {
-      io.emit('animation', 'run4');
-    } else if (runs === 6) {
-      io.emit('animation', 'run6');
+    if (typeof runs === 'number') {
+      if (runs === 1) {
+        io.emit('animation', 'run1');
+      } else if (runs === 2) {
+        io.emit('animation', 'run2');
+      } else if (runs === 3) {
+        io.emit('animation', 'run3');
+      } else if (runs === 4) {
+        io.emit('animation', 'run4');
+      } else if (runs === 6) {
+        io.emit('animation', 'run6');
+      } else {
+        console.warn('Invalid run scored:', runs);
+      }
     }
   });
 
+  // Handle disconnection
   socket.on('disconnect', () => {
     console.log('A client disconnected:', socket.id);
   });
