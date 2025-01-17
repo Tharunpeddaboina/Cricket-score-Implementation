@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const cors = require("cors");
 const app = express();
 const port = 8000;
+const db=require("./db);
 
 // Enable CORS for your frontend
 app.use(cors({
